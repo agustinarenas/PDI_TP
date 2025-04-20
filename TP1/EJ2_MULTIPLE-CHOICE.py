@@ -372,18 +372,7 @@ def imagen_correcciones(img):
     nombre = recortes_filtrados[0]  # Primer campo: nombre
 
     respuesta = procesar_circulos(img)  # 'APROBADO' o 'NO APROBADO'
-
-    plt.figure(figsize=(4, 2))
-    plt.imshow(nombre, cmap='gray')
-    plt.axis('off')
-
-    if respuesta == 'APROBADO':
-        plt.title("✔️", fontsize=14, color='green')
-    else:
-        plt.title("X", fontsize=14, color='red')
-
-    plt.tight_layout()
-    plt.show()
+    return nombre,respuesta
 
 # 2-C_Procesar n imagenes. Mostrar todos los resultados.
 def correcion_examen():
@@ -393,22 +382,29 @@ def correcion_examen():
     - Estado del encabezado (nombre, ID, etc.)
     - Visual de nombre + aprobado/no aprobado
     """
+    fig, axs = plt.subplots(1, 5, figsize=(20, 4))  # 5 exámenes en 1 fila
     for i in range(1, 6):
         exam_id = f'multiple_choice_{i}.png'
-        img_i = cv2.imread(f'TP1/multiple_choice_{exam_id}.png', cv2.IMREAD_GRAYSCALE)
-       
-
-
+        img_i = cv2.imread(f'Procesamiento de imagenes 1/Tp_Pdi/{exam_id}', cv2.IMREAD_GRAYSCALE)
+         
         print(f"===== EXAMEN {i} =====")
-        
+
         #2-D
-        imagen_correcciones(img_i)
-        
+        # ---------------------- VISUAL SUBPLOT -----------------------
+        nombre, estado = imagen_correcciones(img_i)
+        axs[i-1].imshow(nombre, cmap='gray')
+        axs[i-1].axis('off')
+        if estado == 'APROBADO':
+            axs[i-1].set_title("✔️", fontsize=12, color='green')
+        else:
+            axs[i-1].set_title("X", fontsize=12, color='red')
+
         # 2-A
         print(f'{procesar_circulos(img_i, mostrar_resultados=True, mostrar_plots=False)}\n')
 
         #2-B
         print("----- CONTROL DE DATOS COMPLETADOS -----")
         print(f'Encabezado\n{correcion_encabezado(img_i, mostrar_plots=False)}\n')
-
+    plt.tight_layout()
+    plt.show()
 correcion_examen()
