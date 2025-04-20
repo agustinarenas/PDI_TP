@@ -1,6 +1,6 @@
 # PDI_TP
 
-Este repositorio contiene el desarrollo de los Trabajos Prácticos de la materia **Procesamiento Digital de Imágenes**.
+Este repositorio contiene el desarrollo de los Trabajos Prácticos de la materia **Procesamiento de Imágenes**.
 
 ## 📁 Estructura del repositorio
 
