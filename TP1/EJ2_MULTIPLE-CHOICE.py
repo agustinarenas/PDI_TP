@@ -382,29 +382,33 @@ def correcion_examen():
     - Estado del encabezado (nombre, ID, etc.)
     - Visual de nombre + aprobado/no aprobado
     """
-    fig, axs = plt.subplots(1, 5, figsize=(20, 4))  # 5 exámenes en 1 fila
+    resultados = []
     for i in range(1, 6):
         exam_id = f'multiple_choice_{i}.png'
         img_i = cv2.imread(f'Procesamiento de imagenes 1/Tp_Pdi/{exam_id}', cv2.IMREAD_GRAYSCALE)
          
         print(f"===== EXAMEN {i} =====")
 
-        #2-D
-        # ---------------------- VISUAL SUBPLOT -----------------------
-        nombre, estado = imagen_correcciones(img_i)
-        axs[i-1].imshow(nombre, cmap='gray')
-        axs[i-1].axis('off')
-        if estado == 'APROBADO':
-            axs[i-1].set_title("✔️", fontsize=12, color='green')
-        else:
-            axs[i-1].set_title("X", fontsize=12, color='red')
-
         # 2-A
-        print(f'{procesar_circulos(img_i, mostrar_resultados=True, mostrar_plots=False)}\n')
+        print(f'{procesar_circulos(img_i, mostrar_resultados=True, mostrar_plots=True)}\n')
 
         #2-B
         print("----- CONTROL DE DATOS COMPLETADOS -----")
-        print(f'Encabezado\n{correcion_encabezado(img_i, mostrar_plots=False)}\n')
+        print(f'Encabezado\n{correcion_encabezado(img_i, mostrar_plots=True)}\n')
+        
+        #2-D
+        nombre, respuesta = imagen_correcciones(img_i)
+        resultados.append((nombre, respuesta))
+        
+    fig, axs = plt.subplots(1, len(resultados), figsize=(20, 4))
+    for ax, (nombre_img, estado) in zip(axs, resultados):
+        ax.imshow(nombre_img, cmap='gray')
+        ax.axis('off')
+        if estado == 'APROBADO':
+            ax.set_title("✔️", fontsize=12, color='green')
+        else:
+            ax.set_title("X", fontsize=12, color='red')
     plt.tight_layout()
     plt.show()
+    plt.close()
 correcion_examen()
