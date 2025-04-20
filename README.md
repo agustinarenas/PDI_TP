@@ -1,6 +1,6 @@
 # PDI_TP
 
-Este repositorio contiene el desarrollo del Trabajo Práctico de la materia **Procesamiento Digital de Imágenes**.
+Este repositorio contiene el desarrollo de los Trabajos Prácticos de la materia **Procesamiento Digital de Imágenes**.
 
 ## 📁 Estructura del repositorio
 
@@ -9,8 +9,8 @@ PDI_TP/
 │
 ├── TP1/
 │   ├── Imagen_con_detalles_escondidos.tif
-│   ├── ecualizacion_local.py
-│   ├── otros_archivos_utiles.py
+│   ├── EJ1_ECUALIZACION.py
+│   ├── EJ2_MULTIPLE-CHOICE.py
 │   └── ...
 │
 ├── README.md
@@ -51,12 +51,11 @@ PDI_TP/
 
 ## ℹ️ Notas
 
-- Todos los archivos necesarios (imágenes, scripts, etc.) están dentro de la carpeta `TP1/`.
-- Se recomienda usar **Python 3.8 o superior**.
-- La ecualización local se aplica pixel a pixel, usando una ventana deslizante, y permite resaltar detalles ocultos en distintas zonas de la imagen.
+- Todos los archivos necesarios (imágenes, scripts, etc.) están dentro de la carpeta `TP{N}/` (N según corresponda).
+- Se recomienda usar **Python 3.10 o superior**.
 
 ---
 
 ## 🧑‍💻 Autor
 
-- [Tu Nombre o Usuario de GitHub]
+- Agustín Arenas | Santiago Giaveno
