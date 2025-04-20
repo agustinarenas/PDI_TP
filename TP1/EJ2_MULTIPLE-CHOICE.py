@@ -390,11 +390,11 @@ def correcion_examen():
         print(f"===== EXAMEN {i} =====")
 
         # 2-A
-        print(f'{procesar_circulos(img_i, mostrar_resultados=True, mostrar_plots=True)}\n')
+        print(f'{procesar_circulos(img_i, mostrar_resultados=True, mostrar_plots=False)}\n')
 
         #2-B
         print("----- CONTROL DE DATOS COMPLETADOS -----")
-        print(f'Encabezado\n{correcion_encabezado(img_i, mostrar_plots=True)}\n')
+        print(f'Encabezado\n{correcion_encabezado(img_i, mostrar_plots=False)}\n')
         
         #2-D
         nombre, respuesta = imagen_correcciones(img_i)
