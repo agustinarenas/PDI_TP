@@ -1,10 +1,10 @@
-# BIBLIOTECAS
+#Bibliotecas
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Defininimos función para mostrar imágenes
-def imshow(img, new_fig=True, title=None, color_img=False, blocking=False, colorbar=True, ticks=False):
+#Definimos funcion para mostrar imagenes
+def imshow(img, new_fig=True, title=None, color_img=False, blocking=True, colorbar=True, ticks=False):
     if new_fig:
         plt.figure()
     if color_img:
@@ -16,15 +16,14 @@ def imshow(img, new_fig=True, title=None, color_img=False, blocking=False, color
         plt.xticks([]), plt.yticks([])
     if colorbar:
         plt.colorbar()
-    if new_fig:
-        plt.show(block=blocking)
-
+    if new_fig:        
+        plt.show()
 
 # 2-A_Definimos funciones para detectar respuestas
-def procesar_circulos(img, mostrar_plots=False):
+def procesar_circulos(img, mostrar_plots=False, mostrar_resultados=False):
     """
-    Procesa una imagen en escala de grises para detectar círculos, ordenarlos por filas,
-    y determinar si están marcados según la intensidad promedio del parche central.
+    Procesa una imagen en escala de grises para detectar círculos, ordena por filas,
+    y determina si están marcados según la intensidad promedio del parche central.
     """
 
     # Detección de círculos usando la transformada de Hough
@@ -92,18 +91,12 @@ def procesar_circulos(img, mostrar_plots=False):
         # Extrae un parche 14x14 alrededor del centro del círculo; img en escala de grises
         patch = img[max(y-7, 0):y+7, max(x-7, 0):x+7]
 
-        # Convierte el parche a escala de grises
-        #patch_gray = cv2.cvtColor(patch, cv2.COLOR_RGB2GRAY)
-
         # Calcula la intensidad promedio
         mean_intensity = np.mean(patch)
 
         # Clasificación: marcado o vacío
         estado = "MARCADO" if mean_intensity < 140 else "VACÍO"
         respuestas_detectadas.append(estado)
-
-        # Imprime el resultado de forma legible
-        #print(f"Círculo {i+1}: ({x}, {y}), radio={r}, intensidad promedio={mean_intensity:.2f} → {estado}")
 
     # Respuestas correctas
     respuestas_correctas = [
@@ -139,7 +132,8 @@ def procesar_circulos(img, mostrar_plots=False):
     respuestas_dadas = 0
     respuestas_correctas_contador = 0
     respuestas_sin_marcar = 0
-    print("\n----- RESULTADOS DE LAS RESPUESTAS -----")
+    if mostrar_resultados:
+        print("\n----- RESULTADOS DE LAS RESPUESTAS -----")
     for i in range(0, len(respuestas_correctas), 5):
         
         pregunta_num = int(i/5 + 1)
@@ -155,29 +149,31 @@ def procesar_circulos(img, mostrar_plots=False):
             respuestas_dadas += 1
 
         except ValueError:
-            print("Pregunta {}: NO MARCADO".format(pregunta_num))
+            if mostrar_resultados:
+                print("Pregunta {}: NO MARCADO".format(pregunta_num))
             respuestas_sin_marcar += 1
             continue
 
         if indice_correcto == indice_respuesta and marcadas == 1:
-            print("Pregunta {}: OK".format(pregunta_num))
+            if mostrar_resultados:
+                print("Pregunta {}: OK".format(pregunta_num))
             respuestas_correctas_contador += 1
 
         else:
-            print("Pregunta {}: MAL".format(pregunta_num))
-    
+            if mostrar_resultados:
+                print("Pregunta {}: MAL".format(pregunta_num))
+    estado_aprobado = "APROBADO" if respuestas_correctas_contador > 20 else "NO APROBADO"
     # --- Resumen ---
-    print("\n----- RESUMEN -----")
-    print("Total opciones: {}".format(total_opciones))
-    print("Total preguntas: {}".format(total_preguntas))
-    print("Respuestas detectadas: {} / {}".format(respuestas_dadas, total_preguntas))
-    print("Respuestas correctas: {} / {}".format(respuestas_correctas_contador, total_preguntas))
-    print("Respuestas sin marcar: {} / {}".format(respuestas_sin_marcar, total_preguntas))
-    #return estado
-
+    if mostrar_resultados:
+        print("\n----- RESUMEN -----")
+        print("Total opciones: {}".format(total_opciones))
+        print("Total preguntas: {}".format(total_preguntas))
+        print("Respuestas detectadas: {} / {}".format(respuestas_dadas, total_preguntas))
+        print("Respuestas correctas: {} / {}".format(respuestas_correctas_contador, total_preguntas))
+        print("Respuestas sin marcar: {} / {}".format(respuestas_sin_marcar, total_preguntas))
+    return estado_aprobado
 
 # 2-B_Definimos funciones para controlar datos
-
 def acondicionamiento_imagen(img):
     """
     Procesa la imagen para detectar el encabezado y los separadores verticales entre campos.
@@ -188,207 +184,233 @@ def acondicionamiento_imagen(img):
     Devuelve:
     tuple: Una lista con las posiciones x de los separadores verticales y el recorte del encabezado.
     """
+    img_zeros = (img==0) # Por simplicidad, genero una matriz booleana con TRUE donde supongo que hay letras (pixel = 0)
 
-    # Crear máscara booleana donde el píxel es negro (0)
-    img_zeros = img == 0
-
-    # Filas que contienen al menos un valor negro
     img_row_zeros = img_zeros.any(axis=1)
 
-    # Identificar transiciones (bordes de renglones)
-    x = np.diff(img_row_zeros.astype(np.int8))
-    renglones_indxs = np.argwhere(x)
+    x = np.diff(img_row_zeros)          
+    renglones_indxs = np.argwhere(x)    # Esta variable contendrá todos los inicios y finales de los renglones
 
-    # Asegurar que comiencen en una línea "encendida"
-    ii = np.arange(0, len(renglones_indxs), 2)
-    renglones_indxs[ii] += 1
+    ii = np.arange(0,len(renglones_indxs),2) 
+    renglones_indxs[ii]+=1
 
-    # Emparejar inicios y finales de renglones
-    r_idxs = np.reshape(renglones_indxs, (-1, 2))
+    r_idxs = np.reshape(renglones_indxs, (-1,2))
 
-    # Seleccionar el renglón más alto (mayor altura → encabezado)
-    alturas = r_idxs[:, 1] - r_idxs[:, 0]
+    #Detectar la línea más alta (la del encabezado)
+    alturas = r_idxs[:,1] - r_idxs[:,0]
     indice_max = np.argmax(alturas)
     renglon_encabezado = r_idxs[indice_max]
 
-    # Recorte del encabezado desde la imagen original
     img_encabezado = img[renglon_encabezado[0]:renglon_encabezado[1], :]
 
-    # Binarización del encabezado por umbral simple
     umbral_bin = 130
     img_encabezado_zeros = img_encabezado < umbral_bin
 
-    # Sumar valores negros por columna
+    # Contar cantidad de pixeles negros por columna
     suma_col = img_encabezado_zeros.sum(axis=0)
 
-    # Umbral de cantidad de píxeles negros para considerar "línea vertical"
+    # Elegir un umbral
     umbral = 0.8 * img_encabezado_zeros.shape[0]
     columnas_lineas = suma_col > umbral
 
-    # Índices x de columnas que superan el umbral
-    x_idxs = np.argwhere(columnas_lineas).flatten()
+    
+    x_idxs = np.argwhere(columnas_lineas).flatten()       
 
-    # Agrupar columnas cercanas (dentro de una tolerancia de píxeles)
+    # Agrupar columnas que estén cerca (dentro de una tolerancia de píxeles)
     diferencias = np.diff(x_idxs)
     grupos = np.where(diferencias > 10)[0] + 1
+
     columnas_finales = np.split(x_idxs, grupos)
 
-    # Seleccionar un valor representativo por grupo (mediana)
+    # Extraer un valor representativo de cada grupo
     x_separadores = [int(np.median(col)) for col in columnas_finales]
 
-    return x_separadores, img_encabezado
+    return x_separadores,img_encabezado
 
-
-def recorte_campos(x_separadores, img_encabezado):
+def recorte_campos(x_separadores,img_encabezado,img):
     """
-    Recorta los campos del encabezado en base a los separadores verticales detectados.
+    Recorta los campos del encabezado de la imagen en base a los separadores detectados.
 
     Parámetros:
     x_separadores (list): Coordenadas x de los separadores verticales.
     img_encabezado (np.ndarray): Imagen recortada del encabezado.
+    img (np.ndarray): Imagen original.
 
     Devuelve:
     list: Lista de imágenes correspondientes a los campos útiles del encabezado.
     """
-    recortes = [
-        img_encabezado[:, x_separadores[i]:x_separadores[i + 1]]
-        for i in range(len(x_separadores) - 1)
-    ]
+    x_separadores,img_encabezado = acondicionamiento_imagen(img)
+    recortes = []
+    for i in range(len(x_separadores) - 1):
+        x0 = x_separadores[i]
+        x1 = x_separadores[i + 1]
+        campo = img_encabezado[:, x0:x1]   # Recorte entre separadores
+        recortes.append(campo)
+    #Salteo los campos innecesarios y me quedo con los utiles
+    indices_utiles = [1, 3, 5,7]
 
-    indices_utiles = [1, 3, 5, 7]
-    recortes_filtrados = [recortes[i] for i in indices_utiles if i < len(recortes)]
-
+    # Extraer solo los campos deseados
+    recortes_filtrados = [recortes[i] for i in indices_utiles]
     return recortes_filtrados
 
+ 
 
-def contar_palabras_en_imagenes(img_rec, min_area_name=10, separation_threshold=9.7, mostrar_plots=False):
+
+
+
+# Función para validar encabezado (Name, Date, Class)
+def validar_campo(nombre_campo, objetos_validos, espacios):
     """
-    Procesa una lista de imágenes para detectar el número de caracteres y palabras en cada una.
+    Valida un campo del encabezado según su tipo (name, id, code, date).
 
     Parámetros:
-    - img_rec (list): Lista de imágenes recortadas en escala de grises.
-    - min_area_name (int): Área mínima para considerar un componente como letra (solo en el primer campo).
-    - separation_threshold (float): Distancia mínima entre caracteres para separar palabras.
-    - mostrar_plots (bool): Si es True, muestra visualizaciones interactivas.
+    nombre_campo (str): Nombre del campo a validar.
+    objetos_validos (int): Cantidad de caracteres (objetos detectados).
+    espacios (int): Cantidad de espacios detectados entre caracteres.
 
     Devuelve:
-    - list: Tuplas con (número de caracteres, número de palabras) por imagen.
+    str: "OK" si el campo cumple con las reglas, "MAL" si no.
     """
-    total_datos = 0 # Variable auxiliar para debug
-    datos_correctos = 0
-    print("\n----- CONTROL DE DATOS COMPLETADOS -----")
+    #Name: Debe contener al menos dos palabras y no más de 25 caracteres en total.
+    if nombre_campo == 'name':
+        return "OK" if objetos_validos <= 25 and espacios >= 1 else "MAL"
+    
+    #ID: Debe contener sólo 8 caracteres en total, formando una única palabra. 
+    elif nombre_campo == 'id':
+        return "OK" if objetos_validos == 8 and espacios == 0 else "MAL"
+    
+    #Date: Debe contener sólo 8 caracteres en total, formando una única palabra.
+    elif nombre_campo == 'date':
+        return "OK" if objetos_validos == 8 and espacios == 0 else "MAL"
+    
+    #Code: Debe contener un único caracter. 
+    elif nombre_campo == 'code':
+        return "OK" if objetos_validos == 1 and espacios == 0 else "MAL"
+    else:
+        return "MAL"
 
-    for i, img in enumerate(img_rec):
+def correcion_encabezado(img, mostrar_plots=False):
+    """
+    Corrige los campos del encabezado de un examen detectando caracteres y espacios entre ellos.
+    
+    Parámetros:
+    img (np.ndarray): Imagen en escala de grises del examen.
+    mostrar_plots (bool): Si es True, se muestran visualizaciones de los componentes conectados.
 
-        total_datos += 1
+    Devuelve:
+    str: Estado de validación de cada campo del encabezado (name, id, code, date).
+    """
+    # Procesamiento inicial del encabezado
+    x_separadores, img_encabezado = acondicionamiento_imagen(img)
+    recortes_filtrados = recorte_campos(x_separadores, img_encabezado, img)
+    
+    nombres_campos = ['name', 'id', 'code', 'date']
+    resultados = []
 
-        # Recorte lateral para evitar bordes
-        img = img[:, 5:-5]
+    # Recorre cada campo recortado (nombre, ID, código, fecha)
+    for nombre_campo, recorte in zip(nombres_campos, recortes_filtrados):
+        # Recorta márgenes para evitar ruidos en los bordes
+        recorte = recorte[:, 5:-5]
+        _, recorte_bin = cv2.threshold(recorte, 160, 255, cv2.THRESH_BINARY_INV)
 
-        # Umbral binario inverso para resaltar letras
-        _, img_bin = cv2.threshold(img, 160, 255, cv2.THRESH_BINARY_INV)
+        # Detecta componentes conectados
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(recorte_bin, 6, cv2.CV_32S)
 
-        # Segmentación por componentes conectados
-        connectivity = 8
-        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(img_bin, connectivity, cv2.CV_32S)
+        objetos_validos = 0
+        centroides_validos = []
 
-        # Determinar umbral mínimo de área
-        min_area = min_area_name if i == 0 else 0
+        # Filtra componentes pequeños
+        for j, stat in enumerate(stats[1:], start=1):
+            x, y, w, h, area = stat
+            if area >= 3:
+                objetos_validos += 1
+                centroides_validos.append(centroids[j][0])  # Coordenada X
 
-        # Filtrar caracteres por área y extraer coordenadas X
-        filtered_x_coords = []
-        for idx in range(1, num_labels):
-            area = stats[idx, cv2.CC_STAT_AREA]
-            if area >= min_area:
-                x = centroids[idx][0]
-                filtered_x_coords.append(x)
+        # Calcula distancias entre centroides y detecta "espacios"
+        centroides_validos.sort()
+        distancias = np.diff(centroides_validos)
+        umbral_espacio = np.median(distancias) * 1.4 if len(distancias) > 0 else 0
+        espacios = np.sum(distancias > umbral_espacio)
 
-        num_carac = len(filtered_x_coords)
-        #print(f"Imagen {i+1}: {num_carac} caracteres detectados")
+        # Valida el campo según sus componentes y espacios
+        estado = validar_campo(nombre_campo, objetos_validos, espacios)
+        resultados.append(f'{nombre_campo}: {estado}')
 
-        # Determinamos el número de palabras en base a la separación entre caracteres
-        if not filtered_x_coords:
-            num_words = 0
-        else:
-            x_coords_sorted = sorted(filtered_x_coords)
-            num_words = 1
-            for j in range(1, len(x_coords_sorted)):
-                if x_coords_sorted[j] - x_coords_sorted[j - 1] > separation_threshold:
-                    num_words += 1
-        #print(f"Imagen {i+1}: {num_words} palabras detectadas\n")
-        #resultados.append((num_carac, num_words))
-        
-        if i == 0:
-            if num_carac <= 25 and num_words >= 2:
-                print("Name: OK")
-                datos_correctos += 1
-            else:
-                print("Name: MAL")
-
-        elif i == 1:
-            if num_carac == 8 and num_words == 1:
-                print("ID: OK")
-                datos_correctos += 1
-            else:
-                print("ID: MAL")
-        
-        elif i == 2:
-            if num_carac == 1 and num_words == 1:
-                print("Code: OK")
-                datos_correctos += 1
-            else:
-                print("Code: MAL")
-
-        elif i == 3:
-            if num_carac == 8 and num_words == 1:
-                print("Date: OK")
-                datos_correctos += 1
-            else:
-                print("Date: MAL")
-
-        # === BLOQUE DE VISUALIZACIÓN (opcional) ===
+        # Mostrar visualización si está activado
         if mostrar_plots:
-            # Normalización de etiquetas para visualización
-            labels_norm = np.uint8((255 / (num_labels - 1)) * labels)
+            if num_labels > 1:
+                labels_norm = np.uint8((255 / (num_labels - 1)) * labels)
+            else:
+                labels_norm = np.zeros_like(labels, dtype=np.uint8)
+
             im_color = cv2.applyColorMap(labels_norm, cv2.COLORMAP_JET)
             im_color = cv2.cvtColor(im_color, cv2.COLOR_BGR2RGB)
 
-            # Dibujamos los centroides y cajas de los componentes conectados
             for centroid in centroids:
                 cv2.circle(im_color, tuple(np.int32(centroid)), 4, color=(255, 255, 255), thickness=-1)
             for st in stats:
                 cv2.rectangle(im_color, (st[0], st[1]), (st[0] + st[2], st[1] + st[3]), color=(0, 255, 0), thickness=1)
 
-            # Mostrar la imagen con los boxes detectados
             plt.figure(figsize=(8, 4))
             plt.imshow(im_color)
             plt.axis('off')
-            plt.title(f"Componentes conectados - Imagen {i+1}")
+            plt.title(f"Componentes conectados - {nombre_campo}")
             plt.tight_layout()
             plt.show()
-        # === FIN BLOQUE DE VISUALIZACIÓN ===
 
-    # --- Resumen ---
-    print("\n----- RESUMEN -----")
-    print("Total de datos: {}".format(total_datos))
-    print("Datos correctos: {} / {}".format(datos_correctos, total_datos))
-    #return "end"
+    return '\n'.join(resultados)
 
-# 2-C_Procesar n imagenes
-for exam_id in range(1, 6):
-    print(f"\n===== EXAMEN {exam_id} =====")
+#2-D_Mostrar imagen del nombre con su aprobacion de examen.
+def imagen_correcciones(img):
+    """
+    Muestra el campo de nombre del encabezado con un ícono de aprobado o no aprobado,
+    según el resultado de procesar el examen.
 
-    # Cargamos la imagen
-    img = cv2.imread(f'TP1/multiple_choice_{exam_id}.png', cv2.IMREAD_GRAYSCALE)
+    Parámetros:
+    img (np.ndarray): Imagen en escala de grises del examen.
+    """
+    x_separadores, img_encabezado = acondicionamiento_imagen(img)
+    recortes_filtrados = recorte_campos(x_separadores, img_encabezado, img)
+    nombre = recortes_filtrados[0]  # Primer campo: nombre
 
-    # 2-A
-    procesar_circulos(img, mostrar_plots=False)
+    respuesta = procesar_circulos(img)  # 'APROBADO' o 'NO APROBADO'
 
-    # 2-B
-    x_sep, img_encab = acondicionamiento_imagen(img)
+    plt.figure(figsize=(4, 2))
+    plt.imshow(nombre, cmap='gray')
+    plt.axis('off')
 
-    img_rec = recorte_campos(x_sep, img_encab)
+    if respuesta == 'APROBADO':
+        plt.title("✔️", fontsize=14, color='green')
+    else:
+        plt.title("X", fontsize=14, color='red')
 
-    estado = contar_palabras_en_imagenes(img_rec, min_area_name=10, separation_threshold=9.7, mostrar_plots=False)
+    plt.tight_layout()
+    plt.show()
 
-    #break
+# 2-C_Procesar n imagenes. Mostrar todos los resultados.
+def correcion_examen():
+    """
+    Procesa una serie de imágenes de examen y muestra:
+    - Corrección de respuestas del multiple choice
+    - Estado del encabezado (nombre, ID, etc.)
+    - Visual de nombre + aprobado/no aprobado
+    """
+    for i in range(1, 6):
+        exam_id = f'multiple_choice_{i}.png'
+        img_i = cv2.imread(f'TP1/multiple_choice_{exam_id}.png', cv2.IMREAD_GRAYSCALE)
+       
+
+
+        print(f"===== EXAMEN {i} =====")
+        
+        #2-D
+        imagen_correcciones(img_i)
+        
+        # 2-A
+        print(f'{procesar_circulos(img_i, mostrar_resultados=True, mostrar_plots=False)}\n')
+
+        #2-B
+        print("----- CONTROL DE DATOS COMPLETADOS -----")
+        print(f'Encabezado\n{correcion_encabezado(img_i, mostrar_plots=False)}\n')
+
+correcion_examen()
