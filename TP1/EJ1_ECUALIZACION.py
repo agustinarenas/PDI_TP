@@ -38,6 +38,7 @@ def ecualizacion_local(img, window_size):
 
 # Cargar imagen en escala de grises
 img = cv2.imread('TP1/Imagen_con_detalles_escondidos.tif', cv2.IMREAD_GRAYSCALE)
+#img = cv2.imread('PDI_TP/TP1/Imagen_con_detalles_escondidos.tif', cv2.IMREAD_GRAYSCALE)
 
 # Definir tamaño de ventana y aplicar ecualización local
 tam_ventana = 18
@@ -58,10 +59,3 @@ axes[1].set_title("Imagen ecualizada")
 # Mostrar la figura
 plt.tight_layout()
 plt.show()
-
-#Analisis
-"""
-Probamos con diferentes tamaños de ventanas y podemos concluir que mientras mas chica sea la ventana mas claro se van haciendo los cuadrados,
-pensamos que mientras mas chicas las ventanas hace los procesos mas detallados por lo tanto tarda mas pero se obtiene mas detallado, sin embargo,
-no hace falta que las ventanas sean tan chicas en este caso, ya que con una ventana de 7x7 o 9x9 se logra ver bien los detalles escondidos
-"""
