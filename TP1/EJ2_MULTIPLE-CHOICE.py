@@ -1,23 +1,23 @@
-#Bibliotecas
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-#Definimos funcion para mostrar imagenes
-def imshow(img, new_fig=True, title=None, color_img=False, blocking=True, colorbar=True, ticks=False):
-    if new_fig:
-        plt.figure()
+def imshow(img, ax=None, new_fig=True, title=None, color_img=False, blocking=True, colorbar=True, ticks=False):
+    if ax is None:
+        if new_fig:
+            plt.figure()
+        ax = plt.gca()
     if color_img:
-        plt.imshow(img)
+        im = ax.imshow(img)
     else:
-        plt.imshow(img, cmap='gray')
-    plt.title(title)
+        im = ax.imshow(img, cmap='gray')
+    ax.set_title(title)
     if not ticks:
-        plt.xticks([]), plt.yticks([])
+        ax.set_xticks([]), ax.set_yticks([])
     if colorbar:
-        plt.colorbar()
-    if new_fig:        
-        plt.show()
+        plt.colorbar(im, ax=ax)
+    if new_fig:
+        plt.show(block=blocking)
 
 # 2-A_Definimos funciones para detectar respuestas
 def procesar_circulos(img, mostrar_plots=False, mostrar_resultados=False):
@@ -80,10 +80,11 @@ def procesar_circulos(img, mostrar_plots=False, mostrar_resultados=False):
                             cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 1)
 
             # Visualización
-            plt.figure(figsize=(12, 12), dpi=100)
-            imshow(fc, colorbar=False, title=f"Círculos ordenados por filas ({len(circle_list_ordenada)})", new_fig=False)
+            fig, ax = plt.subplots(figsize=(12, 12), dpi=100)
+            imshow(fc, ax=ax, colorbar=False, title=f"Círculos ordenados por filas ({len(circle_list_ordenada)})", new_fig=False)
             plt.tight_layout()
             plt.show()
+            plt.close()
         # === FIN BLOQUE DE VISUALIZACIÓN ===
     respuestas_detectadas = []
     # Evaluación de intensidad en el centro de cada círculo
@@ -314,7 +315,7 @@ def correcion_encabezado(img, mostrar_plots=False):
         _, recorte_bin = cv2.threshold(recorte, 160, 255, cv2.THRESH_BINARY_INV)
 
         # Detecta componentes conectados
-        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(recorte_bin, 6, cv2.CV_32S)
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(recorte_bin, 8, cv2.CV_32S)
 
         objetos_validos = 0
         centroides_validos = []
@@ -357,6 +358,7 @@ def correcion_encabezado(img, mostrar_plots=False):
             plt.title(f"Componentes conectados - {nombre_campo}")
             plt.tight_layout()
             plt.show()
+            plt.close()
 
     return '\n'.join(resultados)
 
@@ -369,24 +371,14 @@ def imagen_correcciones(img):
     Parámetros:
     img (np.ndarray): Imagen en escala de grises del examen.
     """
+   
     x_separadores, img_encabezado = acondicionamiento_imagen(img)
     recortes_filtrados = recorte_campos(x_separadores, img_encabezado, img)
     nombre = recortes_filtrados[0]  # Primer campo: nombre
 
-    respuesta = procesar_circulos(img)  # 'APROBADO' o 'NO APROBADO'
-
-    plt.figure(figsize=(4, 2))
-    plt.imshow(nombre, cmap='gray')
-    plt.axis('off')
-
-    if respuesta == 'APROBADO':
-        plt.title("✔️", fontsize=14, color='green')
-    else:
-        plt.title("X", fontsize=14, color='red')
-
-    plt.tight_layout()
-    plt.show()
-
+    respuesta = procesar_circulos(img,mostrar_resultados=False, mostrar_plots=False)  # 'APROBADO' o 'NO APROBADO'
+    
+    return nombre,respuesta
 # 2-C_Procesar n imagenes. Mostrar todos los resultados.
 def correcion_examen():
     """
@@ -395,22 +387,35 @@ def correcion_examen():
     - Estado del encabezado (nombre, ID, etc.)
     - Visual de nombre + aprobado/no aprobado
     """
+    resultados = []
     for i in range(1, 6):
         exam_id = f'multiple_choice_{i}.png'
-        img_i = cv2.imread(f'TP1/multiple_choice_{exam_id}.png', cv2.IMREAD_GRAYSCALE)
-       
-
-
+        img_i = cv2.imread(f'PDI_TP/TP1/{exam_id}', cv2.IMREAD_GRAYSCALE)
+         
         print(f"===== EXAMEN {i} =====")
-        
-        #2-D
-        imagen_correcciones(img_i)
-        
+
         # 2-A
         print(f'{procesar_circulos(img_i, mostrar_resultados=True, mostrar_plots=False)}\n')
 
         #2-B
         print("----- CONTROL DE DATOS COMPLETADOS -----")
         print(f'Encabezado\n{correcion_encabezado(img_i, mostrar_plots=False)}\n')
-
+        
+        #2-D
+        nombre, respuesta = imagen_correcciones(img_i)
+        resultados.append((nombre, respuesta))
+        
+    fig, axs = plt.subplots(1, len(resultados), figsize=(20, 4))
+    for ax, (nombre_img, estado) in zip(axs, resultados):
+        ax.imshow(nombre_img, cmap='gray')
+        ax.axis('off')
+        if estado == 'APROBADO':
+            ax.set_title("✔️", fontsize=12, color='green')
+        else:
+            ax.set_title("X", fontsize=12, color='red')
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+   
 correcion_examen()
+
