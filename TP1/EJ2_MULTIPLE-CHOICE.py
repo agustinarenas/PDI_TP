@@ -390,7 +390,7 @@ def correcion_examen():
     resultados = []
     for i in range(1, 6):
         exam_id = f'multiple_choice_{i}.png'
-        img_i = cv2.imread(f'PDI_TP/TP1/{exam_id}', cv2.IMREAD_GRAYSCALE)
+        img_i = cv2.imread(f'/TP1/{exam_id}', cv2.IMREAD_GRAYSCALE)
          
         print(f"===== EXAMEN {i} =====")
 
