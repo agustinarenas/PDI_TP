@@ -36,7 +36,7 @@ def ecualizacion_local(img, window_size):
     return img_ecualizada
 
 # Cargar imagen en escala de grises
-img = cv2.imread('PDI_TP/TP1/Imagen_con_detalles_escondidos.tif', cv2.IMREAD_GRAYSCALE)
+img = cv2.imread('TP1/Imagen_con_detalles_escondidos.tif', cv2.IMREAD_GRAYSCALE)
 #img = cv2.imread('PDI_TP/TP1/Imagen_con_detalles_escondidos.tif', cv2.IMREAD_GRAYSCALE)
 
 # Definir tamaño de ventana y aplicar ecualización local
