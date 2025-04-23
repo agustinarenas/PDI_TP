@@ -38,7 +38,7 @@ def procesar_circulos(img, mostrar_plots=False, mostrar_resultados=False):
         maxRadius=14
     )
 
-    estados_circulos = []
+    #estados_circulos = []
 
     if circles is not None:
         # Conversión y redondeo de coordenadas
@@ -108,24 +108,24 @@ def procesar_circulos(img, mostrar_plots=False, mostrar_resultados=False):
         "VACÍO", "VACÍO", "VACÍO", "MARCADO", "VACÍO",  # Pregunta 5
         "VACÍO", "MARCADO", "VACÍO", "VACÍO", "VACÍO",  # Pregunta 6
         "VACÍO", "MARCADO", "VACÍO", "VACÍO", "VACÍO",  # Pregunta 7
-        "MARCADO", "VACÍO", "VACÍO", "VACÍO", "VACÍO",  # Pregunta 8
+        "VACÍO", "VACÍO", "MARCADO", "VACÍO", "VACÍO",  # Pregunta 8
         "VACÍO", "MARCADO", "VACÍO", "VACÍO", "VACÍO",  # Pregunta 9
-        "VACÍO", "VACÍO", "VACÍO", "VACÍO", "MARCADO",  # Pregunta 10
-        "MARCADO", "VACÍO", "VACÍO", "VACÍO", "VACÍO",  # Pregunta 11
-        "VACÍO", "VACÍO", "VACÍO", "MARCADO", "VACÍO",  # Pregunta 12
+        "MARCADO", "VACÍO", "VACÍO", "VACÍO", "VACÍO",  # Pregunta 10
+        "VACÍO", "VACÍO", "VACÍO", "MARCADO", "VACÍO",  # Pregunta 11
+        "MARCADO", "VACÍO", "VACÍO", "VACÍO", "VACÍO",  # Pregunta 12
         "VACÍO", "VACÍO", "MARCADO", "VACÍO", "VACÍO",  # Pregunta 13
         "VACÍO", "VACÍO", "MARCADO", "VACÍO", "VACÍO",  # Pregunta 14
         "VACÍO", "VACÍO", "VACÍO", "MARCADO", "VACÍO",  # Pregunta 15
-        "VACÍO", "VACÍO", "VACÍO", "VACÍO", "MARCADO",  # Pregunta 16
+        "VACÍO", "MARCADO", "VACÍO", "VACÍO", "VACÍO",  # Pregunta 16
         "MARCADO", "VACÍO", "VACÍO", "VACÍO", "VACÍO",  # Pregunta 17
         "VACÍO", "VACÍO", "MARCADO", "VACÍO", "VACÍO",  # Pregunta 18
         "VACÍO", "VACÍO", "MARCADO", "VACÍO", "VACÍO",  # Pregunta 19
         "VACÍO", "VACÍO", "VACÍO", "MARCADO", "VACÍO",  # Pregunta 20
         "VACÍO", "MARCADO", "VACÍO", "VACÍO", "VACÍO",  # Pregunta 21
-        "VACÍO", "VACÍO", "VACÍO", "VACÍO", "MARCADO",  # Pregunta 22
-        "MARCADO", "VACÍO", "VACÍO", "VACÍO", "VACÍO",  # Pregunta 23
-        "VACÍO", "VACÍO", "VACÍO", "VACÍO", "MARCADO",  # Pregunta 24
-        "VACÍO", "VACÍO", "VACÍO", "MARCADO", "VACÍO",  # Pregunta 25
+        "MARCADO", "VACÍO", "VACÍO", "VACÍO", "VACÍO",  # Pregunta 22
+        "VACÍO", "VACÍO", "MARCADO", "VACÍO", "VACÍO",  # Pregunta 23
+        "VACÍO", "VACÍO", "MARCADO", "VACÍO", "VACÍO",  # Pregunta 24
+        "VACÍO", "VACÍO", "MARCADO", "VACÍO", "VACÍO",  # Pregunta 25
     ]
     # Crear un reporte de comparación entre las respuestas correctas y las detectadas
     total_opciones = len(respuestas_detectadas)
@@ -163,7 +163,7 @@ def procesar_circulos(img, mostrar_plots=False, mostrar_resultados=False):
         else:
             if mostrar_resultados:
                 print("Pregunta {}: MAL".format(pregunta_num))
-    estado_aprobado = "APROBADO" if respuestas_correctas_contador > 20 else "NO APROBADO"
+    estado_aprobado = "APROBADO" if respuestas_correctas_contador >= 20 else "NO APROBADO"
     # --- Resumen ---
     if mostrar_resultados:
         print("\n----- RESUMEN -----")
@@ -255,9 +255,6 @@ def recorte_campos(x_separadores,img_encabezado,img):
     return recortes_filtrados
 
  
-
-
-
 
 # Función para validar encabezado (Name, Date, Class)
 def validar_campo(nombre_campo, objetos_validos, espacios):
@@ -379,6 +376,7 @@ def imagen_correcciones(img):
     respuesta = procesar_circulos(img,mostrar_resultados=False, mostrar_plots=False)  # 'APROBADO' o 'NO APROBADO'
     
     return nombre,respuesta
+
 # 2-C_Procesar n imagenes. Mostrar todos los resultados.
 def correcion_examen():
     """
@@ -390,7 +388,7 @@ def correcion_examen():
     resultados = []
     for i in range(1, 6):
         exam_id = f'multiple_choice_{i}.png'
-        img_i = cv2.imread(f'/TP1/{exam_id}', cv2.IMREAD_GRAYSCALE)
+        img_i = cv2.imread(f'TP1/{exam_id}', cv2.IMREAD_GRAYSCALE)
          
         print(f"===== EXAMEN {i} =====")
 
@@ -416,6 +414,6 @@ def correcion_examen():
     plt.tight_layout()
     plt.show()
     plt.close()
-   
-correcion_examen()
 
+
+correcion_examen()

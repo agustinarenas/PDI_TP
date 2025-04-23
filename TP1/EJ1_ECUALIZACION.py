@@ -17,33 +17,35 @@ def ecualizacion_local(img, window_size):
     img_ecualizada = img.copy()
     height, width = img.shape
     window_w, window_h = window_size
-    pad = window_h // 2  # Asume ventana cuadrada para el padding
+  
+    # El pad se calcula para cubrir el faltante en altura y ancho necesario para que la ventana recorra sin problemas
+    # forzando a que la imagen sea un multiplo entero de la ventana en altura y ancho
+    pad_h = (window_h - (height % window_h)) % window_h
+    pad_w = (window_w - (width % window_w)) % window_w
 
     # Aplicar padding replicado
-    img_padded = cv2.copyMakeBorder(
-        img_ecualizada, pad, pad, pad, pad, borderType=cv2.BORDER_REPLICATE
-    )
+    img_padded = cv2.copyMakeBorder(img_ecualizada, 0, pad_h, 0, pad_w, borderType=cv2.BORDER_REPLICATE)
 
     # Recorrer la imagen en bloques y aplicar ecualización
-    for i in range(0, height - window_h, window_h):
-        for j in range(0, width - window_w, window_w):
+    for i in range(window_h//2, (height + pad_h) - window_h//2, window_h):
+        for j in range(window_w//2, (width + pad_w) - window_w//2, window_w):
             block = img_padded[i:i + window_h, j:j + window_w]
             ecualizado = cv2.equalizeHist(block)
-            img_ecualizada[i:i + window_h, j:j + window_w] = ecualizado
-
-    # Suavizar la imagen para eliminar posibles artefactos
-    img_ecualizada = cv2.medianBlur(img_ecualizada, 3)
-
+            img_padded[i:i + window_h, j:j + window_w] = ecualizado
+    img_ecualizada = img_padded[0:height, 0:width]
     return img_ecualizada
 
 # Cargar imagen en escala de grises
-img = cv2.imread('TP1/Imagen_con_detalles_escondidos.tif', cv2.IMREAD_GRAYSCALE)
+img = cv2.imread('PDI_TP/TP1/Imagen_con_detalles_escondidos.tif', cv2.IMREAD_GRAYSCALE)
 #img = cv2.imread('PDI_TP/TP1/Imagen_con_detalles_escondidos.tif', cv2.IMREAD_GRAYSCALE)
 
 # Definir tamaño de ventana y aplicar ecualización local
-tam_ventana = 18
-eq = ecualizacion_local(img, (tam_ventana, tam_ventana))
+ventana_w = 18
+ventana_h = 18
+eq_ss = ecualizacion_local(img, (ventana_w, ventana_h))
 
+# Suavizar la imagen para eliminar posibles artefactos
+eq = cv2.medianBlur(eq_ss, 3)
 
 # Crear figura y ejes
 fig, axes = plt.subplots(1, 2, sharex=True, sharey=True)
