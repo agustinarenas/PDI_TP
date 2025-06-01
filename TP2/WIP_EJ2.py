@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import imutils
 
-
 # Ejecutar con imagen de prueba
 ruta = 'PDI_TP/TP2/Resistencias/R10_a.jpg'
 img = cv2.imread(ruta)
