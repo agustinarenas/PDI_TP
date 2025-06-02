@@ -24,7 +24,6 @@ PDI_TP/
 │        ├── R1_a_out.jpg
 │        └── ...
 |
-|
 ├── README.md
 ```
 
