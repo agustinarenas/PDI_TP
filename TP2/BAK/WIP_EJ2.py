@@ -5,8 +5,9 @@ import imutils
 
 # Ejecutar con imagen de prueba
 ruta = 'PDI_TP/TP2/Resistencias/R10_a.jpg'
-img = cv2.imread(ruta)
 
+
+img = cv2.imread(ruta)
 hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 lower_blue = np.array([105, 50, 50])
 upper_blue = np.array([135, 255, 255])
@@ -21,7 +22,7 @@ B = cv2.getStructuringElement(cv2.MORPH_RECT, (75,75))
 Aop = cv2.morphologyEx(A, cv2.MORPH_OPEN, B)
 
 plt.imshow(cv2.cvtColor(Aop, cv2.COLOR_BGR2RGB))
-plt.title("1° IMEGEN")
+plt.title("IMAGEN DE DISMINUIR LA RESISTENCIA")
 plt.axis("off")
 plt.show()
 
@@ -62,7 +63,7 @@ plt.title("Sólo las líneas detectadas")
 plt.axis('off')
 plt.show()
 
-#print(lines)
+
 
 img_height, img_width = height, width
 max_side = max(img_height, img_width)
@@ -94,7 +95,7 @@ def generate_influence_area(x1, y1, x2, y2, length_extension, thickness):
 def point_in_polygon(point, polygon):
     return cv2.pointPolygonTest(polygon, point, False) >= 0
 
-# --- Agrupar líneas ---
+
 remaining_lines = lines.tolist()
 grupos = []
 
@@ -148,6 +149,9 @@ def encontrar_extremos_mas_separados(grupo):
                 punto1, punto2 = puntos[i], puntos[j]
 
     return [punto1[0], punto1[1], punto2[0], punto2[1]]
+
+
+
 
 # Lista final con una sola línea representativa por grupo
 grupos_unificado = []
@@ -216,7 +220,7 @@ for _, linea in lineas_con_longitud:
 grupo_filtrado.sort(reverse=True, key=lambda x: x[0])
 grupo_final = [linea for _, linea in grupo_filtrado[:4]]
 
-# --- Paso 5: Visualización ---
+# --- Visualización ---
 img_lineas_f = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
 colores = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0)]
 
@@ -285,11 +289,6 @@ plt.title("Líneas estiradas (una por grupo)")
 plt.axis("off")
 plt.show()
 
-#print(grupos_estirado)
-
-
-# Crear imagen negra con el mismo tamaño que la original
-img_puntos = np.zeros((f_mg.shape[0], f_mg.shape[1], 3), dtype=np.uint8)
 
 def interseccion(line1, line2):
     x1, y1, x2, y2 = line1
@@ -306,6 +305,7 @@ def interseccion(line1, line2):
 
 def distancia(p1, p2):
     return ((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2) ** 0.5
+
 
 # Calcular puntos únicos de intersección entre todas las líneas
 puntos_interseccion = []
@@ -324,6 +324,14 @@ for i in range(num_lineas):
                 if not any(distancia(pt, p_exist) < umbral_distancia for p_exist in puntos_interseccion):
                     puntos_interseccion.append(pt)
 
+
+# Asegurarse que hay exactamente 4 puntos
+if len(puntos_interseccion) != 4:
+    raise ValueError("Se requieren exactamente 4 puntos para aplicar homografía.")
+
+# Crear imagen negra con el mismo tamaño que la original
+img_puntos = np.zeros((f_mg.shape[0], f_mg.shape[1], 3), dtype=np.uint8)
+
 # Dibujar puntos en la imagen negra
 for pt in puntos_interseccion:
     cv2.circle(img_puntos, pt, radius=10, color=(0, 255, 0), thickness=-1)  # verde
@@ -335,10 +343,6 @@ plt.title("Puntos de intersección")
 plt.axis("off")
 plt.show()
 
-
-# Asegurarse que hay exactamente 4 puntos
-if len(puntos_interseccion) != 4:
-    raise ValueError("Se requieren exactamente 4 puntos para aplicar homografía.")
 
 # Ordenar los puntos: superior izquierda, superior derecha, inferior derecha, inferior izquierda
 def ordenar_puntos(puntos):
@@ -357,6 +361,8 @@ def ordenar_puntos(puntos):
 
     # Resultado: [sup izq, sup der, inf der, inf izq]
     return np.array([top[0], top[1], bottom[1], bottom[0]], dtype=np.float32)
+
+
 
 # Ordenar los puntos de intersección
 pts_origen = ordenar_puntos(puntos_interseccion)
