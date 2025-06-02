@@ -111,7 +111,7 @@ def procesar_imagen(ruta, debug=False):
 
     if debug:
         plt.imshow(cv2.cvtColor(Aop, cv2.COLOR_BGR2RGB))
-        plt.title("IMAGEN DE DISMINUIR LA RESISTENCIA")
+        plt.title("Imágen de la resistencia amortiguada")
         plt.axis("off")
         plt.show()
 
@@ -125,9 +125,6 @@ def procesar_imagen(ruta, debug=False):
     # Suponemos que f_mg es la imagen base usada para HoughLinesP
     height, width = f_mg.shape[:2]
 
-    # Crear una imagen negra del mismo tamaño
-    line_img = np.zeros((height, width, 3), dtype=np.uint8)
-
     lines = cv2.HoughLinesP(
         image=f_mg,
         rho=10,
@@ -137,7 +134,10 @@ def procesar_imagen(ruta, debug=False):
         maxLineGap=50)         # ¡ajustá esto también!
     
     if debug:
-        # Dibujar líneas en la imagen negra
+
+        # Crear una imagen negra del mismo tamaño
+        line_img = np.zeros((height, width, 3), dtype=np.uint8)
+
         if lines is not None:
             for line in lines:
                 x1, y1, x2, y2 = line[0]
@@ -448,7 +448,7 @@ for i in range(1, 11):
         nombre_archivo = f'R{i}_{letra}.jpg'
         ruta = os.path.join(carpeta, nombre_archivo)
         
-        # Verificar si el archivo existe (opcional pero recomendable)
+        # Verificar si el archivo existe
         if not os.path.exists(ruta):
             print(f'No encontrado: {ruta}')
             continue
@@ -457,4 +457,3 @@ for i in range(1, 11):
         print(f'Procesando: {ruta}')
         imgh_final = procesar_imagen(ruta=ruta, debug=False)
         guardar_imagen_procesada(ruta, imgh_final)
-

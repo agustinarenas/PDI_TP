@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import imutils
 
 
-
 # CODIGOS DE COLORES DE RESISTENCIAS
 
 colores_resistencia = {
@@ -19,7 +18,6 @@ colores_resistencia = {
     "GRIS":    [8, 8, 100000000],
     "BLANCO":  [9, 9, 1000000000]
 }
-
 
 
 # FUNCION RESISTENCIA
@@ -38,7 +36,6 @@ def calcular_resistencia(colores):
 
     valor = (entero + decimal / 10) * multiplicador
     return valor
-
 
 
 # DETERMINACION DE LA RESISTENCIA

@@ -19,31 +19,30 @@ def imshow(img, new_fig=True, title=None, color_img=False, blocking=False, color
         plt.show(block=blocking)
 
 
+# CARGAMOS IMAGEN
+
 #img = cv2.imread('Procesamiento de imagenes 1/Tp_2_Pdi/placa.png')
 img = cv2.imread('PDI_TP/TP2/placa.png')
-type(img)
-img.dtype
-img.shape
 
-
-# Stats
-img.min()
-img.max()
 
 img_original = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 r,g,b = img_original.shape
+
 #img_gray = cv2.imread('Procesamiento de imagenes 1/Tp_2_Pdi/placa.png',cv2.IMREAD_GRAYSCALE)
 img_gray = cv2.imread('PDI_TP/TP2/placa.png',cv2.IMREAD_GRAYSCALE)
+
 
 #1-A
 # Suavizacion imagen
 blur = cv2.GaussianBlur(img_gray, (5, 5), 0)
+
 
 #Binzarizacion de imagen
 img_bin = cv2.adaptiveThreshold(blur, 255, 
                                 cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
                                 cv2.THRESH_BINARY_INV, 
                                 11, 2.1)
+
 
 # Aplicacion de apertura
 se = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
@@ -111,6 +110,7 @@ tipo2 = 0
 tipo3 = 0
 tipo4 = 0
 img_classif = cv2.cvtColor(img_gray, cv2.COLOR_GRAY2BGR)
+
 for i in capacitores:
     
     x, y, w, h, area = stats[i]
@@ -138,6 +138,7 @@ cv2.putText(img_classif, f"Tipo 1: {tipo1}", (20, 80), cv2.FONT_HERSHEY_SIMPLEX,
 cv2.putText(img_classif, f"Tipo 2: {tipo2}", (20, 180), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 0), 6)
 cv2.putText(img_classif, f"Tipo 3: {tipo3}", (20, 280), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 0), 6)
 cv2.putText(img_classif, f"Tipo 4: {tipo4}", (20, 380), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 0), 6)
+
 #1-C
 #Conteo de cantidad de resistencias en la placa
 cantidad_resistencias = len(resistencias)
