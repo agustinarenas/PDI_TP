@@ -2,23 +2,30 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-# DETECTAR BANDAS DE RESISTENCIA
 def detectar_bandas_resistencia(img_path,debug=False):
     """
-    Lee la imagen de la resistencia, recorta el cuerpo sobre fondo azul y devuelve una lista con los 3 colores de banda
-    (sin la banda de tolerancia), ordenados de más lejos a más cerca de la tolerancia.
+    Lee la imagen de la resistencia, la gira si corresponde(para dejar banda de tolerancia a la derecha),
+    recorta el cuerpo sobre fondo azul y devuelve una lista con los 3 colores de banda
+    (sin la banda de tolerancia), ordenados de izquierda a derecha (más lejos a más cerca de la tolerancia).
     Si falla en algún paso, retorna None.
     """
-    #Leer la imagen
+    #Leer la imagen y, si corresponde, hacer flip (voltear) horizontal
     img = cv2.imread(img_path)
     if img is None:
         return None
 
+    # Lista de identificadores de resistencias que vienen rotadas
+    imagenes_invertidas = ['R4', 'R5', 'R6', 'R7', 'R9', 'R10']
+    for nombre in imagenes_invertidas:
+        if nombre in img_path:
+            img = cv2.flip(img, 1)
+
+    
     #Convertir la imagen BGR leída a HSV (para segmentación de color)
     img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
     # Definir rangos aproximados de HSV para cada color que nos interesa
+    #(no incluimos "DORADO", vamos a descartar la banda de tolerancia por posición)
     rangos_colores = {
         'NEGRO':   ([0, 0, 0], [160, 100, 45]),
         'MARRÓN':  ([0, 100, 50], [12, 255, 110]),
@@ -37,7 +44,7 @@ def detectar_bandas_resistencia(img_path,debug=False):
     upper_blue = np.array([135, 255, 255])
     mask_blue = cv2.inRange(img_hsv, lower_blue, upper_blue)         # pixeles de color azul
     mask_inv = cv2.bitwise_not(mask_blue)                            # invertimos (cuerpo en blanco)
-    
+
     # Dilatamos un poco para unir fragmentos pequeños
     kernel = np.array([[0,1,0],
                        [1,1,1],
@@ -54,7 +61,6 @@ def detectar_bandas_resistencia(img_path,debug=False):
 
     # Encontrar el contorno más grande: asumimos que es el cuerpo de la resistencia
     contours, _ = cv2.findContours(mask_cerrada, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
     if not contours:
         # Si no hay contornos, devolvemos None
         return None
@@ -71,100 +77,118 @@ def detectar_bandas_resistencia(img_path,debug=False):
     #Detectar bandas de cada color (incluyendo hasta 2 repeticiones del mismo color)
     #    a) Creamos 'bandas_detectadas' con (centro_x, nombre_color)
     #    b) Aplicamos findContours en cada máscara de color
-    #    c) Filtramos por área > 700 para evitar ruido
+    #    c) Filtramos por área > 200 para evitar ruido
     bandas_detectadas = []
     for color, (low, high) in rangos_colores.items():
         low_hsv = np.array(low)
         high_hsv = np.array(high)
         # Máscara para el rango HSV de este color
         mask_color = cv2.inRange(img_rec_hsv, low_hsv, high_hsv)
-        if color == 'NEGRO':
-            # DILATACIÓN: Engrosamos las regiones negras para cerrar pequeños cortes o fragmentaciones
-            kernel = np.array([[0,1,0],[1,1,1],[0,1,0]], np.uint8)
-            Fd = cv2.dilate(mask_color, kernel, iterations=1)
-
-            # CLAUSURA: Unimos regiones separadas que deberían ser una sola banda (como si fuera un "puente")
-            kernel_cuerpo = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 8))
-            mask_cerrada = cv2.morphologyEx(Fd, cv2.MORPH_CLOSE, kernel_cuerpo)
-
-            # APERTURA: Eliminamos pequeñas manchas o uniones falsas generadas por la dilatación/clausura
-            kernel_cuerpo = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-            mask_color = cv2.morphologyEx(mask_cerrada, cv2.MORPH_OPEN, kernel_cuerpo)
-
-        if color == 'MARRÓN':
-            #Apertura
-            kernel_cuerpo = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-            mask_abierta = cv2.morphologyEx(mask_color, cv2.MORPH_OPEN, kernel_cuerpo)
-            #Clausura
-            kernel_cuerpo = cv2.getStructuringElement(cv2.MORPH_RECT, (8, 8))
-            mask_color = cv2.morphologyEx(mask_abierta, cv2.MORPH_CLOSE, kernel_cuerpo)
-        if color == 'VIOLETA':
-            #Apertura
-            kernel_cuerpo = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-            mask_color = cv2.morphologyEx(mask_color, cv2.MORPH_OPEN, kernel_cuerpo)
         conts, _ = cv2.findContours(mask_color, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        if debug:
+            plt.figure(figsize=(8, 4))
+            plt.imshow(cv2.cvtColor(mask_color, cv2.COLOR_BGR2RGB))
+            plt.title("Bandas detectadas y coloreadas")
+            plt.axis('off')
+            plt.show()
 
         for cnt in conts:
             area = cv2.contourArea(cnt)
-            if area > 700:  # filtrar ruido muy pequeño
+            if area > 200:  # filtrar ruido muy pequeño
                 bx, by, bw, bh = cv2.boundingRect(cnt)
                 centro_x = bx + bw // 2
                 bandas_detectadas.append((centro_x, color))
-                 #Dibujo para depuración: rectángulo verde alrededor de la banda
+                # Dibujo para depuración: rectángulo verde alrededor de la banda
                 cv2.rectangle(img_rec_bgr, (bx, by), (bx + bw, by + bh), (0, 255, 0), 2)
                 # Punto rojo en el centroide horizontal
                 cv2.circle(img_rec_bgr, (centro_x, by + bh // 2), 4, (0, 0, 255), -1)
-                
 
     # Mostrar la imagen con detecciones de bandas/colores para debug
     if debug:
         plt.figure(figsize=(8, 4))
         plt.imshow(cv2.cvtColor(img_rec_bgr, cv2.COLOR_BGR2RGB))
-        plt.title(f"Bandas detectadas y coloreadas. Resistencia {i}")
+        plt.title("Bandas detectadas y coloreadas")
         plt.axis('off')
         plt.show()
 
-    # Filtrar duplicados permitiendo hasta 2 bandas del mismo color
-    bandas_filtradas = []
-    conteo_colores = {}
+    
 
-    # Ordenar por coordenada X antes de filtrar
-    bandas_detectadas = sorted(bandas_detectadas, key=lambda b: b[0])
+    # Agrupar por color evitando duplicados
+    bandas_filtradas = {}
     for centro_x, color in bandas_detectadas:
-        if color not in conteo_colores:
-            conteo_colores[color] = 1
-            bandas_filtradas.append((centro_x, color))
-        elif conteo_colores[color] < 2:
-            conteo_colores[color] += 1
-            bandas_filtradas.append((centro_x, color))
+        if color not in bandas_filtradas:
+            bandas_filtradas[color] = centro_x
+        else:
+            bandas_filtradas[color] = (bandas_filtradas[color] + centro_x) // 2
 
+    # Convertir 'bandas_filtradas' en una lista ordenada (x_pos, color)
+    bandas_finales = [(x_pos, color) for color, x_pos in bandas_filtradas.items()]
    
     # Ordenar las bandas por su coordenada X (de izquierda a derecha)
-    bandas_ord = sorted(bandas_filtradas, key=lambda b: b[0])
+    bandas_ord = sorted(bandas_finales, key=lambda b: b[0]) 
+    
+    # Lógica para descartar la banda de tolerancia (color dorado),usando solamente posición:
+    #    - Si hay 4 bandas → descartamos la última (la más a la derecha)
+    #    - Si hay 3 bandas → asumimos que la dorada no se detectó y devolvemos esas 3
+    #    - De lo contrario (< 3) → devolvemos None
 
+    # Colores que en este caso no se encuentran en las bandas, sacamos para evitar problemas
+    colores_dudosos = ['GRIS', 'AZUL']
 
-    # Ordenamos según posición de la dorada, se utiliza la 1° y 3° banda para estimar el lado de la dorada
-    # Obtener ancho de la imagen
-    ancho_img = img_rec_hsv.shape[1]
+    if len(bandas_ord) == 4:
+        if bandas_ord[0][1] in colores_dudosos:
+            # descartamos la banda de la izquierda
+            bandas_utiles = bandas_ord[1:]
+        elif bandas_ord[-1][1] in colores_dudosos:
+            # descartamos la banda de la derecha
+            bandas_utiles = bandas_ord[:-1]
+        else:
+            # Si ninguna de las dos es color dudoso, asumimos que la dorada es la última
+            bandas_utiles = bandas_ord[:-1]
 
-    # Distancia del primer centro al borde izquierdo
-    dist_izq = bandas_ord[0][0]
+        # Finalmente, devolvemos los nombres de las 3 bandas restantes
+        lista_bandas = [b[1] for b in bandas_utiles]
+        return lista_bandas
 
-    # Distancia del tercer centro al borde derecho
-    dist_der = ancho_img - bandas_ord[2][0]
+    elif len(bandas_ord) == 3:
+        # Si solo hay 3 bandas detectadas, asumimos que la dorada no se encontró
+        lista_bandas = [b[1] for b in bandas_ord]
+        return lista_bandas
 
-    # Decisión de inversión
-    if dist_izq <= dist_der:
-        lista_bandas = bandas_ord.copy()  # se deja como está
-        return [color for _, color in lista_bandas]
-    elif dist_izq > dist_der:
-        lista_bandas = bandas_ord[::-1].copy()  # se invierte
-        return [color for _, color in lista_bandas]
- 
-    return None
+    else:
+        return None
+    
+# Procesar 10 imágenes de las resistencias Rx_a_out(x del 1 al 10)
+resultados = []
+for i in range(1, 11):
+    ruta = f'PDI_TP/TP2/Resistencias/R{i}_a_out.jpg'
+    colores_detectados = detectar_bandas_resistencia(ruta,debug=True)
+    resultados.append(colores_detectados)
+# Mostrar resultados
+for idx, lista in enumerate(resultados, start=1):
+    print(f"R{idx}: {lista}")
+
+#R4 devuelve None ya que hay dos bandas con el mismo color, hay confusiones con los colores naranja y amarillo
+
+# CODIGOS DE COLORES DE RESISTENCIAS
+
+colores_resistencia = {
+    "NEGRO":   [0, 0, 1],
+    "MARRÓN":  [1, 1, 10],
+    "ROJO":    [2, 2, 100],
+    "NARANJA": [3, 3, 1000],
+    "AMARILLO": [4, 4, 10000],
+    "VERDE":   [5, 5, 100000],
+    "AZUL":    [6, 6, 1000000],
+    "VIOLETA": [7, 7, 10000000],
+    "GRIS":    [8, 8, 100000000],
+    "BLANCO":  [9, 9, 1000000000]
+}
 
 
 # FUNCION RESISTENCIA
+
 def calcular_resistencia(colores):
     """
     Calcula el valor de una resistencia a partir de una lista de 3 colores.
@@ -196,28 +220,4 @@ def mostrar_valores():
             bandas_str = " - ".join(resultado)
             print(f"{nombre}: {bandas_str} → {valor_resistencia} Ω")
 
-
-# Procesar 10 imágenes de las resistencias Rx_a_out(x del 1 al 10)
-resultados = []
-for i in range(1, 11):
-    ruta = f'PDI_TP/TP2/Resistencias/R{i}_a_out.jpg'
-    colores_detectados = detectar_bandas_resistencia(ruta,debug=True)
-    resultados.append(colores_detectados)
-
-# Códigos de colores de resistencias
-colores_resistencia = {
-    "NEGRO":   [0, 0, 1],
-    "MARRÓN":  [1, 1, 10],
-    "ROJO":    [2, 2, 100],
-    "NARANJA": [3, 3, 1000],
-    "AMARILLO": [4, 4, 10000],
-    "VERDE":   [5, 5, 100000],
-    "AZUL":    [6, 6, 1000000],
-    "VIOLETA": [7, 7, 10000000],
-    "GRIS":    [8, 8, 100000000],
-    "BLANCO":  [9, 9, 1000000000]}
-
-# Mostrar resultados
-for idx, lista in enumerate(resultados, start=1):
-    print(f"R{idx}: {lista}")
 mostrar_valores()
