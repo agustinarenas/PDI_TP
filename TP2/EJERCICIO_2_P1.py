@@ -47,7 +47,7 @@ def encontrar_extremos_mas_separados(grupo):
 
     for i in range(len(puntos)):
         for j in range(i + 1, len(puntos)):
-            dist = np.linalg.norm(np.array(puntos[i]) - np.array(puntos[j]))
+            dist = np.linalg.norm(np.array(puntos[i]) - np.array(puntos[j])) # Distancia euclidiana
             if dist > max_dist:
                 max_dist = dist
                 punto1, punto2 = puntos[i], puntos[j]
@@ -59,12 +59,13 @@ def interseccion(line1, line2):
     x1, y1, x2, y2 = line1
     x3, y3, x4, y4 = line2
     
-    denom = (x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4)
+    denom = (x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4) # Determinante de una matriz formada por los vectores dirección de las dos líneas.
+    
     if denom == 0:
         return None  # Líneas paralelas
     
-    px = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4)) / denom
-    py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / denom
+    px = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4)) / denom # Resolviendo el sistema de ecuaciones lineales - Regla de cramer
+    py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / denom # Resolviendo el sistema de ecuaciones lineales - Regla de cramer
     
     return int(round(px)), int(round(py))
 
@@ -129,7 +130,7 @@ def procesar_imagen(ruta, debug=False):
         image=f_mg,
         rho=10,
         theta=np.pi / 180,
-        threshold=90,
+        threshold=90, # Votos
         minLineLength=150,     # ¡ajustá esto!
         maxLineGap=50)         # ¡ajustá esto también!
     
@@ -183,7 +184,7 @@ def procesar_imagen(ruta, debug=False):
                         (0, 255, 255), (255, 0, 255), (128, 128, 0), (255, 128, 0)]
 
         for i, grupo in enumerate(grupos):
-            color = group_colors[i % len(group_colors)]
+            color = group_colors[i % len(group_colors)] # En caso de haber mas grupos, repite colores; da la vuelta
             for line in grupo:
                 x1, y1, x2, y2 = line[0]
                 cv2.line(img_grouped, (x1, y1), (x2, y2), color, 2)
@@ -237,8 +238,9 @@ def procesar_imagen(ruta, debug=False):
     linea2 = lineas_con_longitud[1][1][0]
 
     # Calcular puntos medios
-    mx1 = (linea1[0] + linea1[2]) // 2
-    my1 = (linea1[1] + linea1[3]) // 2
+    mx1 = (linea1[0] + linea1[2]) // 2 # x con x
+    my1 = (linea1[1] + linea1[3]) // 2 # y con y
+
     mx2 = (linea2[0] + linea2[2]) // 2
     my2 = (linea2[1] + linea2[3]) // 2
 
@@ -345,7 +347,7 @@ def procesar_imagen(ruta, debug=False):
             pt = interseccion(line_a, line_b)
             if pt:
                 x, y = pt
-                if 0 <= x < f_mg.shape[1] and 0 <= y < f_mg.shape[0]:
+                if 0 <= x < f_mg.shape[1] and 0 <= y < f_mg.shape[0]: # Alternativa quedarse con los 4 puntos cercanos al centro controlando puntos iguales
                     # Verificar que no esté ya en la lista (puntos cercanos)
                     if not any(distancia(pt, p_exist) < umbral_distancia for p_exist in puntos_interseccion):
                         puntos_interseccion.append(pt)
@@ -388,8 +390,7 @@ def procesar_imagen(ruta, debug=False):
         [0, 0],
         [width - 1, 0],
         [width - 1, height - 1],
-        [0, height - 1]
-    ], dtype=np.float32)
+        [0, height - 1]], dtype=np.float32)
 
     # Calcular la matriz de homografía
     H, _ = cv2.findHomography(pts_origen, pts_destino)

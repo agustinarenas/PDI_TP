@@ -29,8 +29,7 @@ def detectar_bandas_resistencia(img_path,debug=False):
         'AZUL':    ([100, 50, 180], [120, 100, 255]),
         'VIOLETA': ([130, 50, 50], [160, 255, 255]),
         'GRIS':    ([0, 0, 100], [180, 50, 200]),
-        'BLANCO':  ([0, 0, 150], [20, 80, 255])
-    }
+        'BLANCO':  ([0, 0, 150], [20, 80, 255])}
 
     #Segmentar el fondo azul para aislar el cuerpo de la resistencia
     lower_blue = np.array([105, 120, 50])
@@ -173,11 +172,11 @@ def calcular_resistencia(colores):
     if len(colores) != 3:
         raise ValueError("La lista debe contener exactamente tres colores")
 
-    entero = colores_resistencia[colores[0]][0]
-    decimal = colores_resistencia[colores[1]][1]
+    decena = colores_resistencia[colores[0]][0]
+    unidad = colores_resistencia[colores[1]][1]
     multiplicador = colores_resistencia[colores[2]][2]
 
-    valor = (entero + decimal / 10) * multiplicador
+    valor = (decena*10 + unidad) * multiplicador
     return valor
 
 
