@@ -68,6 +68,6 @@ PDI_TP/
 
 ---
 
-## 🧑‍💻 Autor
+## 🧑🏽‍💻 Autor
 
 - Agustín Arenas | Santiago Giaveno
