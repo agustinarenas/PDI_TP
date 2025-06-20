@@ -25,56 +25,6 @@ def generate_influence_area(x1, y1, x2, y2, length_extension, thickness):
 def point_in_polygon(point, polygon):
     return cv2.pointPolygonTest(polygon, point, False) >= 0
 
-def ordenar_puntos_por_angulo(puntos):
-    puntos = np.array(puntos)
-    centro = np.mean(puntos, axis=0)
-    angulos = np.arctan2(puntos[:,1] - centro[1], puntos[:,0] - centro[0])
-    indices_ordenados = np.argsort(angulos)
-    return puntos[indices_ordenados]
-
-def dibujar_poligonales(grupos, frame, color=(0, 0, 255), thickness=2):
-    for grupo in grupos:
-        puntos = []
-        for linea in grupo:
-            if len(linea) == 1 and isinstance(linea[0], list):
-                x1, y1, x2, y2 = linea[0]
-            else:
-                continue  # evitar errores por formato raro
-            
-            puntos.append((x1, y1))
-            puntos.append((x2, y2))
-        
-        # Eliminar duplicados
-        puntos = list(set(puntos))
-
-        # Ordenar por ángulo si hay suficientes puntos
-        if len(puntos) >= 3:
-            puntos_ordenados = ordenar_puntos_por_angulo(puntos)
-            pts_cv2 = puntos_ordenados.reshape((-1, 1, 2)).astype(np.int32)
-            cv2.polylines(frame, [pts_cv2], isClosed=True, color=color, thickness=thickness)
-    return frame
-
-def dibujar_poligonales_con_relleno(grupos, frame, color=(0, 255, 0), alpha=0.4, borde_color=(0, 200, 0), thickness=2):
-    overlay = frame.copy()
-
-    for grupo in grupos:
-        puntos = [(l[0][0], l[0][1]) for l in grupo] + [(l[0][2], l[0][3]) for l in grupo]
-        puntos = list(set(puntos))
-
-        if len(puntos) >= 3:
-            puntos_ordenados = ordenar_puntos_por_angulo(puntos)
-            pts_cv2 = puntos_ordenados.reshape((-1, 1, 2)).astype(np.int32)
-
-            # Rellenar sobre el overlay
-            cv2.fillPoly(overlay, [pts_cv2], color=color)
-
-            # Dibujar borde sobre la imagen original (frame)
-            cv2.polylines(frame, [pts_cv2], isClosed=True, color=borde_color, thickness=thickness)
-
-    # Mezclar overlay con la imagen original
-    frame_resultado = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
-    return frame_resultado
-
 # --- Función para determinar una unica linea ---
 def encontrar_extremos_mas_separados(grupo):
     puntos = []
@@ -96,7 +46,7 @@ def encontrar_extremos_mas_separados(grupo):
     return [punto1[0], punto1[1], punto2[0], punto2[1]]
 
 # --- Leer y grabar un video ------------------------------------------------
-cap = cv2.VideoCapture('PDI_TP/TP3/ruta_2.mp4')     # Abro el video de entrada
+cap = cv2.VideoCapture('PDI_TP/TP3/ruta_1.mp4')     # Abro el video de entrada
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))      # Meta-Información del video de entrada
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))    #
 fps = int(cap.get(cv2.CAP_PROP_FPS))                #
@@ -105,7 +55,7 @@ out = cv2.VideoWriter('Video-Output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, 
 
 # --- Control para pruebas (mostrar solo ciertos frames) ---
 mostrar_frames = False        # False para ejecutar completo
-max_segundos = 5           # Mostrar solo N segundos del video
+max_segundos = 1             # Mostrar solo N segundos del video
 max_frames = fps * max_segundos
 frame_count = 0
 
@@ -127,8 +77,7 @@ while (cap.isOpened()):         # Itero, siempre y cuando el video esté abierto
 
     if creation:
         # Paso 1: Definir puntos del polígono
-        #points = np.array([[(450, 285), (500, 285), (925, 540), (100, 540)]], dtype=np.int32)
-        points = np.array([[(455, 315), (520, 315), (925, 540), (100, 540)]], dtype=np.int32)
+        points = np.array([[(450, 285), (500, 285), (925, 540), (100, 540)]], dtype=np.int32)
 
         # Paso 2: Crear máscara vacía
         mask_vid = np.zeros((frame.shape[0], frame.shape[1]), dtype=np.uint8)
@@ -140,71 +89,36 @@ while (cap.isOpened()):         # Itero, siempre y cuando el video esté abierto
 
     # Paso 4: Procesar solo zona dentro del polígono
     zona = cv2.bitwise_and(frame, frame, mask=mask_vid)
-    #cv2.imshow('Work Zona', zona)  
 
-    # Convertir a HSV
     zona_proc = cv2.cvtColor(zona, cv2.COLOR_BGR2HSV)
-
-    # --- Rango para blanco ---
-    # Blanco puro tiene baja saturación y alto valor
     lower_white = np.array([0, 0, 200])
     upper_white = np.array([180, 40, 255])
-    mask_white = cv2.inRange(zona_proc, lower_white, upper_white)
 
-    # --- Rango para amarillo ---
-    # Amarillo típico de rutas: tono 20~35, saturación y valor altos
-    lower_yellow = np.array([15, 100, 100])
-    upper_yellow = np.array([40, 255, 255])
-    mask_yellow = cv2.inRange(zona_proc, lower_yellow, upper_yellow)
-
-    # --- Combinar máscaras ---
-    mask = cv2.bitwise_or(mask_white, mask_yellow)
-
+    mask = cv2.inRange(zona_proc, lower_white, upper_white) # Esta debera ser en la que se fusione el resultado de dos mask
     #mask_invertida = cv2.bitwise_not(mask)
+
 
     # ----------- Bloque: Obtener bordes
     # Apertura y Clausura
     A = mask
-    B = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
-    #Acl = cv2.morphologyEx(A, cv2.MORPH_OPEN, B)
+    B = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5))
+    Aop = cv2.morphologyEx(A, cv2.MORPH_OPEN, B)
     Acl = cv2.morphologyEx(A, cv2.MORPH_CLOSE, B)
 
     # Bordes
     f = Acl #Aop
     se = cv2.getStructuringElement(cv2.MORPH_RECT,(3,3))
     f_mg = cv2.morphologyEx(f, cv2.MORPH_GRADIENT, se)
-    #cv2.imshow('Work Zona', f_mg)
+
     # -----------
 
-    contours, _ = cv2.findContours(Acl, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
-    #cv2.imshow('Work Zona', mask)
-    # Crear una imagen en blanco del mismo tamaño que la máscara
-    output = np.zeros_like(mask)
-    
-    #cnt_cuerpo = max(contours, key=cv2.contourArea)
-    min_area = 0
-
-    # Filtrar los contornos por área
-    filtered_contours_area = [cnt for cnt in contours if cv2.contourArea(cnt) >= min_area]
-
-    # Definir umbral mínimo de puntos
-    #min_puntos = 10
-    # Filtrar contornos con suficiente número de puntos
-    #filtered_contours_point = [cnt for cnt in contours if len(cnt) >= min_puntos]
-
-    # Dibujar los contornos en blanco sobre fondo negro
-    cv2.drawContours(output, filtered_contours_area, -1, (255), 2)  # 255 para blanco, 2 es el grosor
-    #cv2.imshow('Work Zona', output)
-
-
     lines = cv2.HoughLinesP(
-    image=output,
-    rho= 10,
-    theta= np.pi / 180,
-    threshold= 30, # Votos
-    minLineLength= 75,
-    maxLineGap= 90)
+    image=f_mg,
+    rho=10,
+    theta=np.pi / 180,
+    threshold=100, # Votos
+    minLineLength=150,
+    maxLineGap=50)
 
 
     if False: #debug:
@@ -214,19 +128,18 @@ while (cap.isOpened()):         # Itero, siempre y cuando el video esté abierto
         if lines is not None:
             for line in lines:
                 x1, y1, x2, y2 = line[0]
-                cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 0), 1)  # líneas verdes
+                cv2.line(line_img, (x1, y1), (x2, y2), (0, 255, 0), 1)  # líneas verdes
 
         #frame = cv2.add(fondo, zona_proc_color)
     #zona_proc_color = cv2.cvtColor(zona_proc, cv2.COLOR_GRAY2RGB)  # Para recomponer
-    
-    #cv2.imshow('Work Zona', frame)
 
-    # ------------------------------ AGRUPAR LINEAS
+
+    # AGRUPAR LINEAS
     img_height, img_width = height, width
     max_side = max(img_height, img_width)
 
     # --- Parámetro ajustable ---
-    border_thickness = 50
+    border_thickness = 5  # "ancho de borde típico"
 
     remaining_lines = lines.tolist()
     grupos = []
@@ -246,6 +159,7 @@ while (cap.isOpened()):         # Itero, siempre y cuando el video esté abierto
         grupos.append(grupo_actual)
         remaining_lines = restantes
 
+
     if False: #debug:
         # --- Visualización: cada grupo de un solo color ---
         img_grouped = np.zeros((height, width, 3), dtype=np.uint8)
@@ -258,19 +172,49 @@ while (cap.isOpened()):         # Itero, siempre y cuando el video esté abierto
             color = group_colors[i % len(group_colors)] # En caso de haber mas grupos, repite colores; da la vuelta
             for line in grupo:
                 x1, y1, x2, y2 = line[0]
-                cv2.line(frame, (x1, y1), (x2, y2), color, 1)
-
-    #cv2.imshow('Work Zona', frame) 
-
-    #frame_con_poligonales = dibujar_poligonales(grupos, frame)
-    frame_con_poligonales = dibujar_poligonales_con_relleno(grupos, frame, color=(0,255,0), alpha=0.4)
-    cv2.imshow("Poligonales", frame_con_poligonales)
+                cv2.line(img_grouped, (x1, y1), (x2, y2), color, 2)
 
 
+    # UNICA LINEA REPRESENTATIVA POR CADA GRUPO
+    grupos_unificado = []
+
+    for grupo in grupos:
+        linea_unificada = encontrar_extremos_mas_separados(grupo)
+        grupos_unificado.append([linea_unificada])  # se guarda con misma estructura: lista de lista
+
+    if debug:
+        # Visualización opcional
+        img_lineas = np.zeros((height, width, 3), dtype=np.uint8)
+        img_lineas = cv2.bitwise_not(img_lineas)
+
+        colores = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0)]  # un color por grupo
+
+        for i, linea in enumerate(grupos_unificado):
+            x1, y1, x2, y2 = linea[0]
+            color = colores[i % len(colores)]
+            cv2.line(img_lineas, (x1, y1), (x2, y2), color, 4)
+
+    
+#Obtener los puntos, crear lineas entre todos, filtrar por long min 
+#Despues para cada punto tener sus lineas y quedarse con la menor
+#filtrar coincidencias de forma de quedarse con las longitudinales
+#Obtenido algo prolijo se supone que solo hay puntos de contorno
+#Armar poligono con esos puntos y rellenar (Capaz obtener esos puntos se puede de otra forma, investigar pero interes que siganun orden de contorno, por eso las lineas aunque
+#falta pulir detalles en orden)
+
+    # Paso 5: Recomponer el frame
+    #fondo = cv2.bitwise_and(frame, frame, mask=cv2.bitwise_not(mask_vid))
+    #frame = cv2.add(fondo, zona_proc_color)
+
+    # --- Procesamiento ---------------------------------------------
+    #cv2.rectangle(frame, (100,100), (200,200), (0,0,255), 2)            # Proceso el frame...
+    # frame = cv2.resize(frame, dsize=(int(width/3), int(height/3)))      # Si el video es muy grande y al usar cv2.imshow() no entra en la pantalla, se lo puede escalar (solo para visualización!)
+    cv2.imshow('Work Zona', img_lineas)                                          # ... muestro el resultado
+
+    # ---------------------------------------------------------------
     out.write(frame)  # grabo frame --> IMPORTANTE: frame debe tener el mismo tamaño que se definio al crear out.
     if cv2.waitKey(25) & 0xFF == ord('q'):                              # Corto la repoducción si se presiona la tecla "q"
         break
-
 
 cap.release()               # Cierro el video de entrada
 out.release()               # Cierro el video de salida
