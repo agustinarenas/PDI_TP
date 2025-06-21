@@ -26,15 +26,6 @@ def point_in_polygon(point, polygon):
     return cv2.pointPolygonTest(polygon, point, False) >= 0
 
 # --- Función para ordenar puntos por angulo ---
-'''
-def ordenar_puntos_por_angulo(puntos):
-    puntos = np.array(puntos)
-    centro = np.mean(puntos, axis=0)
-    angulos = np.arctan2(puntos[:,1] - centro[1], puntos[:,0] - centro[0])
-    indices_ordenados = np.argsort(angulos)
-    return puntos[indices_ordenados]
-'''
-
 def ordenar_puntos_por_angulo(puntos, dist_max=None):
     puntos = np.array(puntos, dtype=np.float32)
     
@@ -70,32 +61,7 @@ def ordenar_puntos_por_angulo(puntos, dist_max=None):
 
     return puntos_ordenados
 
-'''
-def dibujar_poligonales(grupos, frame, color=(0, 0, 255), thickness=2):
-    for grupo in grupos:
-        puntos = []
-        for linea in grupo:
-            if len(linea) == 1 and isinstance(linea[0], list):
-                x1, y1, x2, y2 = linea[0]
-            else:
-                continue  # evitar errores por formato raro
-            
-            puntos.append((x1, y1))
-            puntos.append((x2, y2))
-        
-        # Eliminar duplicados
-        puntos = list(set(puntos))
-
-        # Ordenar por ángulo si hay suficientes puntos
-        if len(puntos) >= 3:
-            puntos_ordenados = ordenar_puntos_por_angulo(puntos)
-            pts_cv2 = puntos_ordenados.reshape((-1, 1, 2)).astype(np.int32)
-            cv2.polylines(frame, [pts_cv2], isClosed=True, color=color, thickness=thickness)
-    return frame
-'''
-
 # --- Función para dibujar poligonales con relleno ---
-
 def dibujar_poligonales_con_relleno(grupos, frame, color=(0, 255, 0), alpha=0.4, borde_color=(0, 200, 0), thickness=2):
     overlay = frame.copy()
 
@@ -116,7 +82,6 @@ def dibujar_poligonales_con_relleno(grupos, frame, color=(0, 255, 0), alpha=0.4,
     # Mezclar overlay con la imagen original
     frame_resultado = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
     return frame_resultado
-
 
 # --- Función para determinar una unica linea ---
 def encontrar_extremos_mas_separados(grupo):
@@ -141,9 +106,10 @@ def encontrar_extremos_mas_separados(grupo):
 # --- Leer y grabar un video ------------------------------------------------
 cap = cv2.VideoCapture('PDI_TP/TP3/ruta_2.mp4')     # Abro el video de entrada
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))      # Meta-Información del video de entrada
-height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))    #
-fps = int(cap.get(cv2.CAP_PROP_FPS))                #
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))    
+fps = int(cap.get(cv2.CAP_PROP_FPS))                
 #print(width, height)
+
 out = cv2.VideoWriter('Video-Output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, (width,height))    # Abro el video de salida
 
 # --- Control para pruebas (mostrar solo ciertos frames) ---
