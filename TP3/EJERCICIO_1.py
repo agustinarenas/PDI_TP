@@ -1,6 +1,26 @@
 import cv2
 import numpy as np
 
+# --- Función para determinar una unica linea ---
+def encontrar_extremos_mas_separados(grupo):
+    puntos = []
+    for linea in grupo:
+        x1, y1, x2, y2 = linea[0]  # porque cada 'linea' es [[x1, y1, x2, y2]]
+        puntos.append((x1, y1))
+        puntos.append((x2, y2))
+
+    max_dist = 0
+    punto1, punto2 = None, None
+
+    for i in range(len(puntos)):
+        for j in range(i + 1, len(puntos)):
+            dist = np.linalg.norm(np.array(puntos[i]) - np.array(puntos[j])) # Distancia euclidiana
+            if dist > max_dist:
+                max_dist = dist
+                punto1, punto2 = puntos[i], puntos[j]
+
+    return [punto1[0], punto1[1], punto2[0], punto2[1]]
+
 # --- Función para generar un rectángulo de influencia alrededor de una línea ---
 def generate_influence_area(x1, y1, x2, y2, length_extension, thickness):
     cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
@@ -70,7 +90,7 @@ def dibujar_poligonales_con_relleno(grupos, frame, color=(0, 255, 0), alpha=0.4,
         puntos = list(set(puntos))
 
         if len(puntos) >= 3:
-            puntos_ordenados = ordenar_puntos_por_angulo(puntos, dist_max=150)
+            puntos_ordenados = ordenar_puntos_por_angulo(puntos, dist_max=150) # dist_max = 150 anda bien con video 1 por lo menos
             pts_cv2 = puntos_ordenados.reshape((-1, 1, 2)).astype(np.int32)
 
             # Rellenar sobre el overlay
@@ -83,25 +103,6 @@ def dibujar_poligonales_con_relleno(grupos, frame, color=(0, 255, 0), alpha=0.4,
     frame_resultado = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
     return frame_resultado
 
-# --- Función para determinar una unica linea ---
-def encontrar_extremos_mas_separados(grupo):
-    puntos = []
-    for linea in grupo:
-        x1, y1, x2, y2 = linea[0]  # porque cada 'linea' es [[x1, y1, x2, y2]]
-        puntos.append((x1, y1))
-        puntos.append((x2, y2))
-
-    max_dist = 0
-    punto1, punto2 = None, None
-
-    for i in range(len(puntos)):
-        for j in range(i + 1, len(puntos)):
-            dist = np.linalg.norm(np.array(puntos[i]) - np.array(puntos[j])) # Distancia euclidiana
-            if dist > max_dist:
-                max_dist = dist
-                punto1, punto2 = puntos[i], puntos[j]
-
-    return [punto1[0], punto1[1], punto2[0], punto2[1]]
 
 # --- Leer y grabar un video ------------------------------------------------
 cap = cv2.VideoCapture('PDI_TP/TP3/ruta_2.mp4')     # Abro el video de entrada
