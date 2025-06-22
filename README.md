@@ -12,7 +12,6 @@ PDI_TP/
 │   ├── EJ1_ECUALIZACION.py
 │   ├── EJ2_MULTIPLE-CHOICE.py
 │   └── ...
-│
 ├── TP2/
 │   ├── placa.png
 │   ├── EJERCICIO_1.py
@@ -23,6 +22,11 @@ PDI_TP/
 │        ├── R1_a.jpg
 │        ├── R1_a_out.jpg
 │        └── ...
+├── TP3/
+│   ├── EJERCICIO_1.py
+│   ├── ruta_1.mp4
+│   ├── ruta_2.mp4
+│   └── ...
 |
 ├── README.md
 ```

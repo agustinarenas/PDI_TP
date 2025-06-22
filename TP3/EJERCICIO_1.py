@@ -83,7 +83,7 @@ def ordenar_puntos_por_angulo(puntos, dist_max=None):
 
 # --- Función para dibujar poligonales ---
 def dibujar_poligonales_con_relleno(grupos, frame, color=(255, 0, 0), alpha=0.4,
-                                     borde_color=(255, 0, 0), thickness=2,
+                                     borde_color=(255, 0, 0), thickness=1,
                                      baricentro_global=(475, 270)):
 
     overlay = frame.copy()
@@ -124,7 +124,7 @@ def dibujar_poligonales_con_relleno(grupos, frame, color=(255, 0, 0), alpha=0.4,
 
 
 # --- Leer y grabar un video ------------------------------------------------
-cap = cv2.VideoCapture('PDI_TP/TP3/ruta_1.mp4')     # Abro el video de entrada
+cap = cv2.VideoCapture('TP3/ruta_1.mp4')     # Abro el video de entrada
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))      # Meta-Información del video de entrada
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))    
 fps = int(cap.get(cv2.CAP_PROP_FPS))                
