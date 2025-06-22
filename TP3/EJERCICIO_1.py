@@ -81,7 +81,7 @@ def ordenar_puntos_por_angulo(puntos, dist_max=None):
 
     return puntos_ordenados
 
-
+# --- Función para dibujar poligonales ---
 def dibujar_poligonales_con_relleno(grupos, frame, color=(255, 0, 0), alpha=0.4,
                                      borde_color=(255, 0, 0), thickness=2,
                                      baricentro_global=(475, 270)):
