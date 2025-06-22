@@ -81,23 +81,42 @@ def ordenar_puntos_por_angulo(puntos, dist_max=None):
 
     return puntos_ordenados
 
-# --- Función para dibujar poligonales con relleno ---
-def dibujar_poligonales_con_relleno(grupos, frame, color=(0, 255, 0), alpha=0.4, borde_color=(0, 200, 0), thickness=2):
+
+def dibujar_poligonales_con_relleno(grupos, frame, color=(255, 0, 0), alpha=0.4,
+                                     borde_color=(255, 0, 0), thickness=2,
+                                     baricentro_global=(475, 270)):
+
     overlay = frame.copy()
+    baricentro_x, baricentro_y = baricentro_global
 
     for grupo in grupos:
+        # Recolectar puntos de líneas
         puntos = [(l[0][0], l[0][1]) for l in grupo] + [(l[0][2], l[0][3]) for l in grupo]
         puntos = list(set(puntos))
 
         if len(puntos) >= 3:
-            puntos_ordenados = ordenar_puntos_por_angulo(puntos, dist_max=150) # dist_max = 150 anda bien con video 1 por lo menos
-            pts_cv2 = puntos_ordenados.reshape((-1, 1, 2)).astype(np.int32)
+            # Baricentro del grupo
+            xs, ys = zip(*puntos)
+            bx = sum(xs) / len(xs)
+            by = sum(ys) / len(ys)
 
-            # Rellenar sobre el overlay
-            cv2.fillPoly(overlay, [pts_cv2], color=color)
+            # Filtrar puntos que estén al lado opuesto del baricentro global
+            if bx < baricentro_x:
+                # Baricentro del grupo está a la izquierda → eliminar puntos a la derecha
+                puntos_filtrados = [p for p in puntos if p[0] <= baricentro_x]
+            else:
+                # Baricentro del grupo está a la derecha → eliminar puntos a la izquierda
+                puntos_filtrados = [p for p in puntos if p[0] >= baricentro_x]
 
-            # Dibujar borde sobre la imagen original (frame)
-            cv2.polylines(frame, [pts_cv2], isClosed=True, color=borde_color, thickness=thickness)
+            if len(puntos_filtrados) >= 3:
+                puntos_ordenados = ordenar_puntos_por_angulo(puntos_filtrados, dist_max=100)
+                pts_cv2 = puntos_ordenados.reshape((-1, 1, 2)).astype(np.int32)
+
+                # Rellenar sobre el overlay
+                cv2.fillPoly(overlay, [pts_cv2], color=color)
+
+                # Dibujar borde sobre la imagen original (frame)
+                cv2.polylines(frame, [pts_cv2], isClosed=True, color=borde_color, thickness=thickness)
 
     # Mezclar overlay con la imagen original
     frame_resultado = cv2.addWeighted(overlay, alpha, frame, 1 - alpha, 0)
@@ -105,7 +124,7 @@ def dibujar_poligonales_con_relleno(grupos, frame, color=(0, 255, 0), alpha=0.4,
 
 
 # --- Leer y grabar un video ------------------------------------------------
-cap = cv2.VideoCapture('PDI_TP/TP3/ruta_2.mp4')     # Abro el video de entrada
+cap = cv2.VideoCapture('PDI_TP/TP3/ruta_1.mp4')     # Abro el video de entrada
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))      # Meta-Información del video de entrada
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))    
 fps = int(cap.get(cv2.CAP_PROP_FPS))                
@@ -138,7 +157,7 @@ while (cap.isOpened()):         # Itero, siempre y cuando el video esté abierto
     if creation:
         # Definir puntos del polígono
         #points = np.array([[(450, 285), (500, 285), (925, 540), (100, 540)]], dtype=np.int32)
-        points = np.array([[(455, 318), (520, 318), (925, 540), (100, 540)]], dtype=np.int32)
+        points = np.array([[(455, 320), (512, 320), (925, 540), (100, 540)]], dtype=np.int32)
 
         # Crear máscara vacía
         mask_vid = np.zeros((frame.shape[0], frame.shape[1]), dtype=np.uint8)
@@ -151,9 +170,11 @@ while (cap.isOpened()):         # Itero, siempre y cuando el video esté abierto
     # Procesar solo zona dentro del polígono
     zona = cv2.bitwise_and(frame, frame, mask=mask_vid)
 
+
     # -------------------------------------------------------
     #cv2.imshow('Work Zona', zona)
     # -------------------------------------------------------
+
 
     # Convertir a HSV
     zona_proc = cv2.cvtColor(zona, cv2.COLOR_BGR2HSV)
@@ -212,8 +233,8 @@ while (cap.isOpened()):         # Itero, siempre y cuando el video esté abierto
     image=output,
     rho= 10,
     theta= np.pi / 180,
-    threshold= 10, # Votos
-    minLineLength= 10,
+    threshold= 20, # Votos
+    minLineLength= 15,
     maxLineGap= 35)
 
     if False: #debug:
@@ -235,7 +256,7 @@ while (cap.isOpened()):         # Itero, siempre y cuando el video esté abierto
     max_side = max(img_height, img_width)
 
     # --- Parámetro ajustable ---
-    border_thickness = 50
+    border_thickness = 35
 
     remaining_lines = lines.tolist()
     grupos = []
@@ -255,6 +276,36 @@ while (cap.isOpened()):         # Itero, siempre y cuando el video esté abierto
         grupos.append(grupo_actual)
         remaining_lines = restantes
 
+    # Ordenar los grupos por cantidad de líneas (de mayor a menor)
+    grupos_ordenados = sorted(grupos, key=len, reverse=True)
+
+    # Tomar los dos grupos más grandes
+    grupos2 = grupos_ordenados[:2]
+
+    # 1. Recolectar todos los puntos de todos los grupos en grupos2
+    puntos = []
+    for grupo in grupos2:
+        for line in grupo:
+            x1, y1, x2, y2 = line[0]
+            puntos.extend([(x1, y1), (x2, y2)])
+
+    # 2. Calcular baricentro (promedio de x e y)
+    xs, ys = zip(*puntos)
+    baricentro_x = 475
+    baricentro_y = 270  # Podés usarlo para visualizar si querés
+
+    # 3. Filtrar líneas que NO crucen la vertical x = baricentro_x
+    grupos2_filtrados = []
+    for grupo in grupos2:
+        grupo_filtrado = []
+        for line in grupo:
+            x1, _, x2, _ = line[0]
+            # Condición: ambos puntos a un mismo lado de la línea vertical
+            if (x1 - baricentro_x) * (x2 - baricentro_x) >= 0:
+                grupo_filtrado.append(line)
+        grupos2_filtrados.append(grupo_filtrado)
+
+
     if False: #debug:
         # --- Visualización: cada grupo de un solo color ---
         img_grouped = np.zeros((height, width, 3), dtype=np.uint8)
@@ -263,14 +314,24 @@ while (cap.isOpened()):         # Itero, siempre y cuando el video esté abierto
         group_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0),
                         (0, 255, 255), (255, 0, 255), (128, 128, 0), (255, 128, 0)]
 
-        for i, grupo in enumerate(grupos):
+        # DIBUJAR LÍNEA VERTICAL EN EL BARICENTRO (color blanco)
+        cv2.line(frame, (baricentro_x, 0), (baricentro_x, height), (255, 255, 255), 1)
+
+        for i, grupo in enumerate(grupos2_filtrados):
             color = group_colors[i % len(group_colors)] # En caso de haber mas grupos, repite colores; da la vuelta
             for line in grupo:
                 x1, y1, x2, y2 = line[0]
                 cv2.line(frame, (x1, y1), (x2, y2), color, 1)
- 
+    
     # -------------------------------------------------------
-    frame_con_poligonales = dibujar_poligonales_con_relleno(grupos, frame, color=(0,255,0), alpha=0.4)
+    #cv2.imshow("Poligonales", frame)
+    # -------------------------------------------------------
+
+
+    # ------------------------------ PLOT FINAL
+
+    # -------------------------------------------------------
+    frame_con_poligonales = dibujar_poligonales_con_relleno(grupos2, frame, color=(255,0,0), alpha=0.4)
     cv2.imshow("Poligonales", frame_con_poligonales)
     # -------------------------------------------------------
 
