@@ -104,6 +104,11 @@ def dibujar_poligonales_con_relleno(grupos, frame, color=(255, 0, 0), alpha=0.4,
             if bx < baricentro_x:
                 # Baricentro del grupo está a la izquierda → eliminar puntos a la derecha
                 puntos_filtrados = [p for p in puntos if p[0] <= baricentro_x]
+
+                puntos_filtrados.extend([
+                    (130, 535),  # Reemplazá X1, Y1
+                    (145, 535)]) # Reemplazá X2, Y2
+
             else:
                 # Baricentro del grupo está a la derecha → eliminar puntos a la izquierda
                 puntos_filtrados = [p for p in puntos if p[0] >= baricentro_x]
@@ -111,7 +116,7 @@ def dibujar_poligonales_con_relleno(grupos, frame, color=(255, 0, 0), alpha=0.4,
             if len(puntos_filtrados) >= 3:
                 puntos_ordenados = ordenar_puntos_por_angulo(puntos_filtrados, dist_max=175)
                 pts_cv2 = puntos_ordenados.reshape((-1, 1, 2)).astype(np.int32)
-                
+
                 # Rellenar sobre el overlay
                 cv2.fillPoly(overlay, [pts_cv2], color=color)
 
@@ -124,7 +129,7 @@ def dibujar_poligonales_con_relleno(grupos, frame, color=(255, 0, 0), alpha=0.4,
 
 
 # --- Leer y grabar un video ------------------------------------------------
-cap = cv2.VideoCapture('PDI_TP/TP3/ruta_2.mp4')     # Abro el video de entrada
+cap = cv2.VideoCapture('PDI_TP/TP3/ruta_1.mp4')     # Abro el video de entrada
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))      # Meta-Información del video de entrada
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))    
 fps = int(cap.get(cv2.CAP_PROP_FPS))                
